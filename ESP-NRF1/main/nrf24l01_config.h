@@ -17,9 +17,9 @@
 #ifdef NRF_FREERTOS
 // task stack size. may need to increase if e.g. printf is used in rx callback
 // default configMINIMAL_STACK_SIZE
-#define NRF_RTOS_IRQ_TASK_STACK_SIZE configMINIMAL_STACK_SIZE
-#define NRF_RTOS_TX_TASK_STACK_SIZE configMINIMAL_STACK_SIZE
-#define NRF_RTOS_RX_TASK_STACK_SIZE configMINIMAL_STACK_SIZE
+#define NRF_RTOS_IRQ_TASK_STACK_SIZE 2048 // configMINIMAL_STACK_SIZE
+#define NRF_RTOS_TX_TASK_STACK_SIZE 2048 // configMINIMAL_STACK_SIZE
+#define NRF_RTOS_RX_TASK_STACK_SIZE 4096 //configMINIMAL_STACK_SIZE
 
 // priority of tasks
 // NOTE: idle task priority is different in e.g. cmsis-rtos v1/v2

@@ -21,4 +21,3 @@ typedef struct {
 } nrf24l01_stm32_hal_config;
 
 void nrf_stm32_hal_init(nrf24l01* nrf);
-

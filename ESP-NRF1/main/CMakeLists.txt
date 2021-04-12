@@ -1,0 +1,2 @@
+idf_component_register(SRCS "blink.c" "../lib/NRF24L01/src/nrf24l01.c" "../lib/NRF24L01/src/nrf24l01_ll.c" "../lib/NRF24L01/src/nrf24l01_freertos.c" "../lib/NRF24L01/src/nrf24l01_esp_idf.c"
+                    INCLUDE_DIRS "." "../lib/NRF24L01/inc")

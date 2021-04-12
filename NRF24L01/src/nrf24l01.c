@@ -34,6 +34,7 @@ void nrf_init(nrf24l01* nrf, nrf24l01_init* init)
     nrf->platform_conf = init->platform_conf;
     nrf->io = init->io;
     nrf->rx_msg_cb = init->rx_msg_cb;
+    nrf->tx_complete_cb = init->tx_complete_cb;
     nrf->rx_msg_len = -1;
 
     if (init->platform_init)
@@ -43,11 +44,12 @@ void nrf_init(nrf24l01* nrf, nrf24l01_init* init)
     
 #ifdef NRF_FREERTOS
     nrf->freertos.spi_mutex = xSemaphoreCreateMutex();
-    nrf->freertos.tx_queue = xQueueCreate(NRF_RTOS_TX_QUEUE_LENGTH, sizeof(nrf24l01_tx_packet));
+    nrf->freertos.tx_queue = xQueueCreate(NRF_RTOS_TX_QUEUE_LENGTH, sizeof(nrf24l01_freertos_tx_packet));
     nrf->freertos.events = xEventGroupCreate();
-    xTaskCreate(IsrHandlerTask, "IsrHandler", configMINIMAL_STACK_SIZE, (void *) nrf, NRF_RTOS_IRQ_TASK_PRIORITY, &nrf->freertos.isr_handler_task);
-    xTaskCreate(NrfTxTask, "TxTask", configMINIMAL_STACK_SIZE, (void *) nrf, NRF_RTOS_IRQ_TASK_PRIORITY -1, &nrf->freertos.tx_task);
-    xTaskCreate(NrfRxTask, "RxTask", configMINIMAL_STACK_SIZE, (void *) nrf, NRF_RTOS_IRQ_TASK_PRIORITY -1, &nrf->freertos.rx_task);
+
+    xTaskCreate(IsrHandlerTask, "IsrHandler", NRF_RTOS_IRQ_TASK_STACK_SIZE, (void *) nrf, NRF_RTOS_IRQ_TASK_PRIORITY, &nrf->freertos.isr_handler_task);
+    xTaskCreate(NrfTxTask, "TxTask", NRF_RTOS_TX_TASK_STACK_SIZE, (void *) nrf, NRF_RTOS_TX_TASK_PRIORITY, &nrf->freertos.tx_task);
+    xTaskCreate(NrfRxTask, "RxTask", NRF_RTOS_RX_TASK_STACK_SIZE, (void *) nrf, NRF_RTOS_RX_TASK_PRIORITY, &nrf->freertos.rx_task);
 #endif // NRF_FREERTOS
 }
 
@@ -75,7 +77,7 @@ NRF_RESULT nrf_init_enhanced_shockbust_default(nrf24l01* nrf, nrf24l01_init* ini
     };
         
     nrf24l01_config config = { 
-        .rf_channel = 65,
+        .rf_channel = esb_config->rf_channel,
         .data_rate = esb_config->data_rate,
         .tx_power = esb_config->tx_power,
         .addr_width = NRF_ADDR_WIDTH_5,
@@ -245,8 +247,7 @@ NRF_RESULT nrf_rx_irq_handler(nrf24l01* nrf) {
     return err;
 }
 
-NRF_RESULT nrf_tx_irq_handler(nrf24l01* nrf, NRF_TX_RESULT tx_result) {
-    
+NRF_RESULT nrf_tx_irq_handler(nrf24l01* nrf, NRF_TX_RESULT tx_result) {  
     nrf->tx_busy   = 0;
     switch (tx_result)
     {
@@ -380,7 +381,7 @@ NRF_RESULT nrf_set_ccw(nrf24l01* nrf, bool activate) {
     return NRF_OK;
 }
 
-NRF_RESULT nrf_clear_interrupts(nrf24l01* nrf) {
+NRF_RESULT nrf_clear_interrupts(nrf24l01* nrf) {    
     nrf24l01_reg_status status = {
         .max_rt = true,
         .tx_ds = true,

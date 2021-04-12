@@ -9,6 +9,7 @@ nrf24l01 nrf1;
 extern SPI_HandleTypeDef hspi1;
 
 void nrf_rx_msg_cb(nrf24l01* dev, NRF_PIPE_NO pipe, uint8_t len);
+void nrf_tx_complete_cb(nrf24l01* nrf, NRF_TX_RESULT result, uint8_t len);
 
 void StartDefaultTask(void* params)
 {
@@ -28,6 +29,7 @@ void StartDefaultTask(void* params)
         .platform_init = nrf_stm32_hal_init,
         .io = nrf_stm32_hal_io,
         .rx_msg_cb = nrf_rx_msg_cb,
+		.tx_complete_cb = nrf_tx_complete_cb,
     };
 
     nrf24l01_esb_init esb1 = {
@@ -59,6 +61,11 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 }
 
 void nrf_rx_msg_cb(nrf24l01* dev, NRF_PIPE_NO pipe, uint8_t len)
+{
+	HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
+}
+
+void nrf_tx_complete_cb(nrf24l01* nrf, NRF_TX_RESULT result, uint8_t len)
 {
 	HAL_GPIO_TogglePin(LED_GPIO_Port, LED_Pin);
 }

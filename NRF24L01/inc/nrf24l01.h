@@ -6,10 +6,17 @@
 #include <stdint.h>
 
 #ifdef NRF_FREERTOS
+#ifdef NRF_ESP_IDF
+#include "freertos/FreeRTOS.h"
+#include "freertos/semphr.h"
+#include "freertos/event_groups.h"
+#include "freertos/task.h"
+#else
 #include "FreeRTOS.h"
 #include "semphr.h"
 #include "event_groups.h"
 #include "task.h"
+#endif // NRF_ESP_IDF
 #endif // NRF_FREERTOS
 
 #define NRF_SET_BITS_IF(reg, cond, mask) if (cond) { (reg) |= (mask); } else { (reg) &= ~(mask); }
@@ -98,6 +105,7 @@ enum NRF_RESULT {
 typedef enum {
     NRF_TX_DS,
     NRF_TX_MAX_RT,
+    NRF_TX_TIMEOUT,
 } NRF_TX_RESULT;
 
 typedef struct
@@ -171,6 +179,7 @@ typedef struct
 
     nrf24l01_io_calls io;
     void(*rx_msg_cb)(nrf24l01*, NRF_PIPE_NO, uint8_t len);
+    void(*tx_complete_cb)(nrf24l01*, NRF_TX_RESULT, uint8_t len);
 
 } nrf24l01_init;
 
@@ -197,8 +206,7 @@ typedef struct
 typedef struct {
     uint8_t* data;
     uint8_t length;
-    uint8_t retries;
-} nrf24l01_tx_packet;
+} nrf24l01_freertos_tx_packet;
 
 #endif // NRF_FREERTOS
 
@@ -206,10 +214,10 @@ struct nrf24l01
 {
     void* platform_conf;  // platform-specific config
 
-    volatile uint8_t        tx_busy;
-    volatile NRF_RESULT     tx_result;
-    volatile uint8_t        rx_busy;
-    volatile bool           irq_active;
+    volatile bool tx_busy;
+    volatile NRF_RESULT tx_result;
+    volatile bool rx_busy;
+    volatile bool irq_active;
     volatile NRF_TXRX_STATE state;
 
     nrf24l01_status status;
@@ -220,6 +228,7 @@ struct nrf24l01
     nrf24l01_io_calls io;
     nrf24l01_callbacks irq_cb;
     void(*rx_msg_cb)(nrf24l01*, NRF_PIPE_NO, uint8_t len);
+    void(*tx_complete_cb)(nrf24l01*, NRF_TX_RESULT, uint8_t len);
     NRF_RESULT(*irq_isr)(nrf24l01*);
 
 #ifdef NRF_FREERTOS
